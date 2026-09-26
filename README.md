@@ -11,8 +11,8 @@ field-maps/
 ├── web/          Next.js management application, source, public assets, and build config
 ├── mobile/       Expo / React Native collector with SQLite and MapLibre
 ├── backend/      FastAPI authentication and observation API
-├── database/     Local PostGIS, SQL migrations, seed data, and database tests
-├── supabase/     Hosted migrations and optional local Supabase configuration
+├── database/     Local Supabase tooling, SQL tests and hosted verification
+├── supabase/     Canonical schema migrations, local Supabase configuration and seeds
 ├── qgis/         Read-only live project, connection settings, and launcher
 ├── docs/         Requirements, architecture, research, and implementation scope
 ├── designs/      Design references
@@ -41,7 +41,7 @@ pnpm dev
 | `pnpm check`                                  | Web and mobile type/lint checks, then Python Ruff/BasedPyright      |
 | `pnpm test`                                   | Mobile tests, local API integration tests, and local SQL assertions |
 
-Run `pnpm run help` for the command overview. Integration tests need the local databases started with `pnpm db:up`; they do not run against Supabase. The hosted API needs the already provisioned local credential volume. See [workspace operations](docs/Workspace.md) for prerequisites, individual checks, and deployment instructions.
+Run `pnpm run help` for the command overview. Integration tests need the local databases started with `pnpm db:start`; they do not run against Supabase. The hosted API needs the already provisioned local credential volume. See [workspace operations](docs/Workspace.md) for prerequisites, individual checks, and deployment instructions.
 
 ## Current functionality
 

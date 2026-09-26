@@ -19,7 +19,6 @@ The iOS simulator uses `http://127.0.0.1:8000`. That API now connects to **hoste
 From the repository root, with Docker Desktop running:
 
 ```sh
-docker compose --env-file /dev/null -f database/compose.yaml stop api
 docker compose --env-file /dev/null -f database/compose.hosted.yaml up -d --build
 curl http://127.0.0.1:8000/health
 ```
@@ -30,7 +29,7 @@ Stop it with:
 docker compose --env-file /dev/null -f database/compose.hosted.yaml stop
 ```
 
-The local database and test databases remain available. To switch back, stop the hosted API before `make -C database api-up`; both configurations bind localhost port 8000. They use separate observation stores. Switching servers does not transfer their data or reset mobile upload receipts.
+The local database and test databases remain available. To switch back, stop the hosted API before starting the local API with uvicorn; both configurations bind localhost port 8000. They use separate observation stores. Switching servers does not transfer their data or reset mobile upload receipts.
 
 For Metro, use `pnpm start:simulator` in `mobile/`; its IPv4 setting matches the simulator bundle URL. The development app already includes SecureStore and NetInfo. Physical devices need a reachable HTTPS API.
 
@@ -93,7 +92,7 @@ This volume is local secret storage for development, not a production secret man
 
 TLS verifies the Supabase CA chain and pooler hostname. See [certificate provenance and compatibility](../backend/certs/README.md). This client configuration does not change the project's server-wide SSL enforcement setting.
 
-The CLI configuration in `supabase/config.toml` describes an optional local Supabase stack. It does not replace `database/compose.yaml` and must not be pushed to overwrite hosted Auth settings. The migrations were applied through the authenticated Supabase connector; no local CLI login/link is required to run the API.
+The CLI configuration in `supabase/config.toml` defines the canonical local development and test stack. Use `pnpm db:start`; do not push this local configuration to overwrite hosted Auth settings. The migrations were applied through the authenticated Supabase connector; no local CLI login/link is required to run the API.
 
 ## Verified and pending
 
@@ -108,3 +107,9 @@ The CLI configuration in `supabase/config.toml` describes an optional local Supa
 The mobile queue currently uploads new points while the app is active. General form publishing, attachments, edit/delete synchronization, server-to-device downloads, and closed-app background synchronization remain outside this slice. The development mobile-to-database-to-QGIS path is verified for the two test observations; a production rollout and physical-device field trial remain unverified.
 
 References: [Supabase connection methods](https://supabase.com/docs/guides/database/connecting-to-postgres), [PostGIS extension placement](https://supabase.com/docs/guides/database/extensions/postgis), [TLS verification](https://supabase.com/docs/guides/platform/ssl-enforcement).
+
+## Local foundation verification (2026-09-26)
+
+DB-02/04/05/06 now run against local Supabase using the canonical migrations. The local advisor reports one performance warning for the deliberately separate `self_memberships` and `manager_memberships` SELECT policies required by DB-05. Both policies are covered by isolation tests; neither grants another user's role. No new local security warning was reported. This does not verify or change hosted Auth settings.
+
+The new schema/function migrations have been rebuilt and tested locally. The user reported applying the PR #9 package migration; hosted DB-04/05/06 application is not claimed here. The updated verification script must run only after those migrations exist.

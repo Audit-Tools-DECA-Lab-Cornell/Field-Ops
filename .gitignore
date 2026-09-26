@@ -127,3 +127,4 @@ scratch/
 *.log
 
 Ithaca_QGIS
+database/.local/

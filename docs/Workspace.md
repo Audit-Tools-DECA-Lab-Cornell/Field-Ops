@@ -34,14 +34,15 @@ Run long-lived services in separate terminals. There is no command that silently
 | `pnpm mobile:check`, `pnpm mobile:test`      | Mobile TypeScript/Biome and Vitest                          |
 | `pnpm backend:check`                         | Ruff and BasedPyright                                       |
 | `pnpm check`                                 | All three static check groups                               |
-| `pnpm db:up`                                 | Start local PostGIS and create development/test databases   |
-| `pnpm db:migrate`, `pnpm db:seed`            | Migrate/seed the local development database                 |
-| `pnpm backend:test`                          | Build the API test container and test against local PostGIS |
-| `pnpm db:test`                               | Run SQL assertions against the isolated local test database |
+| `pnpm db:start`                                 | Start local Supabase and configure the restricted API role   |
+| `pnpm db:reset`                              | Explicitly rebuild local Supabase from canonical migrations |
+| `pnpm db:stop`                               | Stop local Supabase while preserving its volumes           |
+| `pnpm backend:test`                          | Run API tests against local Supabase |
+| `pnpm db:test`                               | Run rolled-back SQL assertions against local Supabase |
 | `pnpm test`                                  | Mobile, local API, and local SQL suites                     |
 | `pnpm api:hosted:up`, `pnpm api:hosted:stop` | Local API process using hosted Supabase                     |
 
-For the full integration suite, first run `pnpm db:up`, then `pnpm test`. These operations create/migrate the local test databases. They do not apply hosted migrations or change deployed Supabase settings.
+For the full integration suite, first run `pnpm db:start`, then `pnpm test`. These operations create/migrate the local test databases. They do not apply hosted migrations or change deployed Supabase settings.
 
 The existing short aliases `pnpm lint`, `pnpm lint:fix`, `pnpm typecheck`, `pnpm format`, and `pnpm format:check` target only web. `pnpm check` is the product-wide static check. Formatting never sweeps the backend, spreadsheets, GIS files, or native projects.
 
@@ -49,9 +50,11 @@ The existing short aliases `pnpm lint`, `pnpm lint:fix`, `pnpm typecheck`, `pnpm
 
 The normal connected mobile development setup uses the local API on port 8000 with hosted Supabase Auth and PostGIS. `pnpm api:hosted:up` uses `database/compose.hosted.yaml`; its secret volume must already exist as described in [Supabase setup](Supabase-Setup.md). Credentials are not copied into root configuration.
 
-Local API development is still available with `make -C database up migrate seed api-build api-up`. Both API configurations bind port 8000, so stop the currently active API before switching. To stop the local configuration use `make -C database stop`; this also stops its local database. To stop only the hosted API use `pnpm api:hosted:stop`. Switching stores does not migrate observations or reset mobile upload receipts.
+Local API development uses `pnpm db:start` and, from `backend/`, `uv run --frozen uvicorn fieldmaps_api.main:create_app_from_config --factory --app-dir src --port 8000`. Stop any API already on port 8000 first. The local API uses `config.local.json` and the generated `../database/.local/fieldmaps-api-password`; it connects to the local database, not hosted PostGIS. Its public identity-provider configuration is unchanged by DB-02; synthetic API tests inject their own JWT verifier.
 
-Database command aliases target only the local stack. Hosted migrations remain a separate explicit operation. No automatic deploy, reset, volume deletion, or hosted migration is attached to installation or checks.
+`pnpm db:stop` stops local Supabase while preserving volumes. `pnpm db:reset` explicitly deletes local database contents and reapplies the canonical migrations and fictional seeds. Routine checks do not reset data. Hosted migration application is separate.
+
+GitHub Actions runs the same web/mobile checks, backend checks/API tests, SQL assertions and plan checker. The local database jobs never link to hosted Supabase. The contracts drift job is added by CON-03 when its generator exists.
 
 ## Web move and deployment
 

@@ -196,6 +196,8 @@ Cut in this order:
 - **DB-01 is `doing`.**
   - The hosted migration now carries caller-scoped package policies.
   - Its 13 hosted assertions pass on a disposable PostGIS, including a rerun after a real package exists.
-  - Applying it to staging still needs the user.
+  - The user reports applying it to staging; package acceptance was not repeated here.
 - **Review of PR 9.** Greptile's six findings and about 45 further defects from a verified review pass are folded into the task texts above (see decisions D13–D17).
-- **Everything else is `todo`.**
+- **DB-02, DB-04, DB-05 and DB-06 are complete locally (2026-09-26).** A fresh Supabase reset, 94 mobile tests, 62 API tests and SQL isolation/function suites pass.
+- **OPS-06 is prepared; DB-03 waits for its green GitHub Actions run.** Local checks pass, including mobile formatting.
+- Remaining task status lives in each owning file.

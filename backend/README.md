@@ -4,18 +4,18 @@ FastAPI, SQLAlchemy, and PostgreSQL/PostGIS implement the first authenticated, a
 
 ## Run locally
 
-For the configured hosted database, follow [Supabase setup](../docs/Supabase-Setup.md). The commands below use the separate local PostGIS database.
-
-With Docker Desktop running, from the repository root:
+Start Docker Desktop, then run from the product root:
 
 ```sh
-make -C database up migrate seed
-make -C database api-build api-test api-up
+pnpm db:start
+pnpm backend:test
 ```
 
-The API listens at `http://127.0.0.1:8000`; `/docs` exposes its OpenAPI contract. `/health` is a process liveness check, not a database/auth readiness check. Stop with `make -C database stop`.
+From `backend/`, start the API with `uv run --frozen uvicorn fieldmaps_api.main:create_app_from_config --factory --app-dir src --port 8000`. Stop any existing API on that port first. `config.local.json` points to local Supabase port 54322 and its generated ignored password file. `pnpm db:stop` preserves local database volumes; `pnpm db:reset` explicitly recreates the local schema and fictional fixtures.
 
-The public `config.local.json` now identifies the FieldMaps Supabase development project; see [current setup status](../docs/Supabase-Setup.md). Leaving both identity settings null disables authenticated access. Missing credentials return 401; a token presented without a configured verifier returns 503. No test-user shortcut or permissive auth mode exists on the running API. Tests use ephemeral RSA keys and synthetic identities in the separate `fieldmaps_api_test` database.
+Tests use ephemeral signing keys and fictional accounts on local Supabase, with real RLS through `fieldmaps_api`. The public identity-provider configuration for the running development API is still the configured hosted Auth provider; local Auth onboarding is handled by the later identity tasks. There is no test-user bypass in the running API. `/health` is liveness, not readiness.
+
+For the separate API connected to hosted PostGIS, use [Supabase setup](../docs/Supabase-Setup.md).
 
 ## Configure a development identity provider
 
@@ -23,7 +23,8 @@ Create/select a Supabase development project, use its asymmetric JWT signing key
 
 ```json
 {
-	"database_url": "postgresql+asyncpg://fieldmaps_api@/fieldmaps?host=/var/run/postgresql",
+	"database_url": "postgresql+asyncpg://fieldmaps_api@127.0.0.1:54322/postgres",
+	"database_password_file": "../database/.local/fieldmaps-api-password",
 	"issuer": "https://YOUR_PROJECT.supabase.co/auth/v1",
 	"jwks_url": "https://YOUR_PROJECT.supabase.co/auth/v1/.well-known/jwks.json",
 	"audience": "authenticated",
@@ -47,7 +48,7 @@ per request.
 
 These issuer/JWKS values are public. No Supabase service-role key is needed by this API. It validates the JWT signature, expiry, audience, and issuer and derives the user UUID from the signed subject. Legacy HS256 projects must switch to a supported asymmetric signing key before using this verifier. See [Supabase JWT documentation](https://supabase.com/docs/guides/auth/jwts).
 
-An administrator must add the Auth user's UUID to `fieldmaps.project_memberships`; signing in alone grants no project access. From an authorized local administrator SQL session, replace `AUTH_USER_UUID` in this statement:
+Tenancy functions now create organizations, projects and memberships; the HTTP identity/tenancy endpoints are still BE-06/07. For manual local provisioning, create the matching Auth and profile rows before inserting a membership. Signing in alone grants no project access. From an authorized local administrator SQL session, replace `AUTH_USER_UUID` in this statement:
 
 ```sql
 INSERT INTO fieldmaps.project_memberships (user_id, organization_id, project_id, role)
@@ -63,7 +64,7 @@ Rebuild/restart the API after public config changes. Configure the same provider
 
 The image carries every configuration it might run under and picks one at startup from the
 `FIELDMAPS_CONFIG` environment variable. Unset, it reads `config.local.json`, which is the local
-development file and names a Unix socket — so a deployed container that does not set this
+development file and names localhost Supabase — so a deployed container that does not set this
 variable answers `/health` and fails every request that touches the database.
 
 On [Render](https://render.com/docs/docker), deploying `backend/Dockerfile`:
@@ -109,10 +110,10 @@ Project membership is enforced in both the API lookup and database row policies.
 
 ## Verification and limits
 
-`make -C database api-test` passes 24 tests against real PostGIS, including token rejection, membership checks, connection-pool isolation, conflicting/concurrent retries, input boundaries, and restricted GIS readback. Python Ruff and BasedPyright also pass. The separate SQL suite passes 19 assertions. Native sign-in, mobile-to-running-API reconnect, and QGIS Desktop refresh still need a configured account/device acceptance run.
+`pnpm backend:test` exercises real local Supabase, including token rejection, membership checks, connection-pool isolation, conflicting/concurrent retries, input boundaries, and restricted GIS readback. Python Ruff and BasedPyright also pass. The local SQL suite passes 78 assertions, followed by 18 assertions from the hosted verification script run locally. Native sign-in, mobile-to-running-API reconnect, and QGIS Desktop refresh still need a configured account/device acceptance run.
 
-This is a local development service. The shared Unix socket uses local trust and must not be deployed as production database authentication. The hosted development database now has adapted migrations, restricted runtime credentials, and verified TLS. Production rollout still needs approved region/retention choices, a public HTTPS API deployment, managed secret injection, network restrictions, backups, monitoring, and API resource limits. The API has no attachments, update/delete synchronization, download cursor, or closed-app mobile background synchronization yet. Package archives live in a `bytea` column capped at 16 MB, which keeps them transactional with their manifest and checks and under the same row policies; moving to object storage later means replacing one column. The device cannot fetch a package yet.
+This is a local development service. Local Supabase is development infrastructure and must not be deployed as a production database. The hosted development database now has adapted migrations, restricted runtime credentials, and verified TLS. Production rollout still needs approved region/retention choices, a public HTTPS API deployment, managed secret injection, network restrictions, backups, monitoring, and API resource limits. The API has no attachments, update/delete synchronization, download cursor, or closed-app mobile background synchronization yet. Package archives live in a `bytea` column capped at 16 MB, which keeps them transactional with their manifest and checks and under the same row policies; moving to object storage later means replacing one column. The device cannot fetch a package yet.
 
-Use QGIS read-only access for this slice; arbitrary GIS edits do not yet synchronize back to devices. The local database has no TCP listener, so a QGIS Desktop connection is not provisioned by these commands. The GIS test validates the database view, not the desktop application's behavior.
+Use QGIS read-only access for this slice; arbitrary GIS edits do not yet synchronize back to devices. The local database listens on port 54322; a QGIS Desktop login is not provisioned by these commands. The GIS test validates the database view, not the desktop application's behavior.
 
 References: [FastAPI typed responses](https://fastapi.tiangolo.com/tutorial/response-model/), [Supabase mobile auth](https://supabase.com/docs/guides/auth/quickstarts/react-native), [PostGIS](https://postgis.net/).

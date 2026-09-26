@@ -1,37 +1,24 @@
 from uuid import UUID, uuid4
 
-import anyio
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import TypeAdapter
-from sqlalchemy import Result, text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.pool import NullPool
 
+from tests.local_database import admin_sql
 from tests.signing import PROJECT
 
 pytestmark = pytest.mark.integration
 
 
-async def read_as_gis(observation_id: UUID) -> tuple[float, float, int, str]:
-    engine = create_async_engine(
-        "postgresql+asyncpg://fieldmaps_owner@/fieldmaps_api_test?host=/var/run/postgresql",
-        poolclass=NullPool,
+def read_as_gis(observation_id: UUID) -> tuple[float, float, int, str]:
+    result = admin_sql(
+        "BEGIN; GRANT fieldmaps_sample_reader TO postgres WITH SET TRUE; "
+        "SET LOCAL ROLE fieldmaps_sample_reader; "
+        "SELECT json_build_array(longitude, latitude, people, notes)::text "
+        "FROM gis.sample_observations WHERE observation_id = :'observation_id'; ROLLBACK;",
+        f"observation_id={observation_id}",
     )
-    try:
-        async with async_sessionmaker(engine).begin() as connection:
-            await connection.execute(text("SET LOCAL ROLE fieldmaps_sample_reader"))
-            result: Result[tuple[str]] = await connection.execute(
-                text(
-                    "SELECT json_build_array(longitude, latitude, people, notes)::text "
-                    "FROM gis.sample_observations "
-                    "WHERE observation_id = :id",
-                ),
-                {"id": observation_id},
-            )
-            return TypeAdapter(tuple[float, float, int, str]).validate_json(result.scalar_one())
-    finally:
-        await engine.dispose()
+    return TypeAdapter(tuple[float, float, int, str]).validate_json(result)
 
 
 def test_committed_upload_is_immediately_visible_through_restricted_gis_view(
@@ -51,4 +38,4 @@ def test_committed_upload_is_immediately_visible_through_restricted_gis_view(
         },
     )
     assert response.status_code == 200
-    assert anyio.run(read_as_gis, observation_id) == (-76.485, 42.448, 3, "GIS readback")
+    assert read_as_gis(observation_id) == (-76.485, 42.448, 3, "GIS readback")

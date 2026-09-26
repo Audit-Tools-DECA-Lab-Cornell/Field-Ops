@@ -30,10 +30,7 @@
         "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "plugins": [
       "expo-router",
       "expo-sqlite",

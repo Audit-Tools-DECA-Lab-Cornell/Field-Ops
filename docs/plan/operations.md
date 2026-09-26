@@ -101,7 +101,7 @@ Done when: a preview deployment can sign in against staging.
 Verify: sign in on a preview URL.
 
 ### OPS-06: GitHub Actions CI
-Status: todo · Phase 0 · Size M · Depends: DB-02 · Blocks: DB-03, OPS-09
+Status: doing (workflow prepared; local checks pass; awaiting GitHub Actions) · Phase 0 · Size M · Depends: DB-02 · Blocks: DB-03, OPS-09
 Read first: the root `package.json` scripts; `Makefile`; `docs/Workspace.md` ("Development and checks").
 Do:
 1. Create `.github/workflows/ci.yml` with these jobs:
@@ -260,4 +260,3 @@ Do: the same procedure as OPS-14, for GIS-03 and DB-13.
 - Before GIS-03, confirm that nothing still reads the sample view.
 
 Done when: staging's ledger lists every migration in `supabase/migrations/`, and `verify.sql` passes. Production (OPS-09) is created only from a migration set proven here.
-

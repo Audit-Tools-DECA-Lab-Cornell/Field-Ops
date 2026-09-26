@@ -4,25 +4,24 @@ from sqlalchemy import text
 
 PROJECTS: Final = text("""
 SELECT json_build_object('project_id', p.id, 'organization_id', p.organization_id,
-  'name', p.name, 'role', m.role)::text
-FROM fieldmaps.projects p JOIN fieldmaps.project_memberships m ON m.project_id = p.id
-WHERE m.user_id = fieldmaps.request_user_id()
+  'name', p.name, 'role', CASE WHEN fieldmaps_private.has_org_role(
+    p.organization_id, ARRAY['owner','admin']) THEN 'manager' ELSE m.role END)::text
+FROM fieldmaps.projects p LEFT JOIN fieldmaps.project_memberships m
+  ON m.project_id = p.id AND m.user_id = fieldmaps.request_user_id()
+WHERE p.id IN (SELECT fieldmaps_private.my_project_ids())
 ORDER BY p.name, p.id
 """)
 
-# Every membership join names the caller: RLS on project_memberships is not what makes a role
-# check correct, so widening who may read memberships cannot turn one member into another.
 # The site and the form are resolved by code within the project, and the form's own definition
 # comes back with them: what an answer may be is the instrument's decision, not the API's.
 UPLOAD_TARGET: Final = text("""
 SELECT json_build_object('organization_id', p.organization_id,
   'site_id', s.id, 'form_version_id', f.id, 'definition', f.definition)::text
 FROM fieldmaps.projects p
-JOIN fieldmaps.project_memberships m ON m.project_id = p.id
 JOIN fieldmaps.sites s ON s.project_id = p.id AND s.code = :site
 JOIN fieldmaps.form_versions f ON f.project_id = p.id AND f.code = :form
-WHERE p.id = :project AND m.user_id = fieldmaps.request_user_id()
-  AND m.role IN ('observer', 'manager')
+WHERE p.id = :project
+  AND fieldmaps_private.has_project_role(p.id, ARRAY['observer','manager'])
 """)
 
 INSERT_OBSERVATION: Final = text("""
@@ -55,10 +54,9 @@ PACKAGE_TARGET: Final = text("""
 SELECT json_build_object('organization_id', p.organization_id,
   'site_id', s.id, 'form_version_id', f.id, 'definition', f.definition)::text
 FROM fieldmaps.projects p
-JOIN fieldmaps.project_memberships m ON m.project_id = p.id
 JOIN fieldmaps.sites s ON s.project_id = p.id AND s.code = :site
 JOIN fieldmaps.form_versions f ON f.project_id = p.id AND f.code = :form
-WHERE p.id = :project AND m.user_id = fieldmaps.request_user_id() AND m.role = 'manager'
+WHERE p.id = :project AND fieldmaps_private.has_project_role(p.id, ARRAY['manager'])
 """)
 
 NEXT_PACKAGE_VERSION: Final = text("""

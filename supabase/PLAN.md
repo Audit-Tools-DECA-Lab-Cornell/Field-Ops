@@ -16,8 +16,8 @@ Related plan files:
 
 **Schema today** (Postgres 17, PostGIS 3.3 in `extensions` on hosted):
 - Tables: `organizations`, `projects`, `sites`, `form_versions` (immutable by trigger), `observations`, `project_memberships` (roles `observer`, `manager`, `viewer`), `site_packages`, `package_checks`.
-- Hosted gets the last two from `supabase/migrations/20260923120000_site_packages.sql` (DB-01, not yet applied).
-- Ledger versions `0001`–`0005` exist; the next free number is `0006`.
+- The user reports applying `supabase/migrations/20260923120000_site_packages.sql` (DB-01); hosted acceptance was not repeated in this implementation.
+- Ledger versions `0001`–`0008` exist locally; the next free number is `0009`.
 
 **Identity.**
 - The API sets `fieldmaps.user_id` per transaction, and `fieldmaps.request_user_id()` reads it.
@@ -28,16 +28,14 @@ Related plan files:
 - The policies from the initial migration still rely on the memberships SELECT policy showing each account only its own rows. They are rewritten in DB-05, **before** anything lets members see other members' rows.
 - A widened memberships policy would otherwise turn "a manager exists on this project" into "you are a manager". This was reproduced: a viewer prepared a site package.
 
-**What is missing:**
-- There is no `profiles` table, no link to `auth.users`, no invitations and no organization membership.
-- A new public sign-up can authenticate, but gets `[]` and 403 everywhere (`backend/src/fieldmaps_api/repository.py:69`).
+**Local foundation now implemented:** profiles linked to Auth, organization memberships, invitations, private tenancy functions, caller-scoped RLS and concurrency tests. Public HTTP identity/tenancy endpoints remain BE-06/07; Training data remains DB-07.
 
-**Two migration tracks.**
-- `database/migrations/0001-0005` plus the `migrate.sql` ledger (local Docker PostGIS, used by the SQL and API tests today).
+**Canonical migration track (2026-09-26).**
+- Historical `database/migrations/0001-0005` and its ledger remain on disk pending DB-03; no current command or test uses them.
 - `supabase/migrations/` (hosted: a squashed initial file with seeds, plus small files).
 - Decision D7 makes `supabase/migrations/` canonical.
 
-**The GIS view.** `gis.sample_observations` is owner-executed with hard-coded IDs, so its WHERE clause is its only tenant boundary (`database/sample-gis.sql:32-34`). GIS-01 and GIS-03 replace it.
+**The GIS view.** `gis.sample_observations` is owner-executed with hard-coded IDs, so its WHERE clause is its only tenant boundary (`supabase/migrations/20260918185806_fieldops_initial.sql`). GIS-01 and GIS-03 replace it.
 
 ## Conventions for every migration
 
@@ -93,7 +91,7 @@ Related plan files:
 ## Tasks
 
 ### DB-01: Port site packages to the hosted migrations
-Status: doing (written and tested locally; applying to staging needs the user) · Phase 0 · Size S · Depends: none · Blocks: DB-12, SYNC-01, WEB-01
+Status: doing (user reports migration applied; staging package acceptance remains unverified) · Phase 0 · Size S · Depends: none · Blocks: DB-12, SYNC-01, WEB-01
 Read first: `supabase/migrations/20260923120000_site_packages.sql`; `database/migrations/0004_site_packages.sql` and `0005_package_policy_identity.sql`; `database/hosted/verify.sql`.
 Done so far (2026-09-26):
 - **The hosted migration** holds local `0004`'s tables and triggers, and `0005`'s tightened policies:
@@ -131,7 +129,8 @@ Done when:
 Verify: `curl` with a staging manager token; `verify.sql` output.
 
 ### DB-02: Local Supabase stack as the development and test database
-Status: todo · Phase 0 · Size L · Depends: none · Blocks: DB-03, DB-04, MOB-05, MOB-21, OPS-06, SYNC-01, WEB-03, WEB-04, WEB-15
+Status: done (2026-09-26) · Phase 0 · Size L · Depends: none · Blocks: DB-03, DB-04, MOB-05, MOB-21, OPS-06, SYNC-01, WEB-03, WEB-04, WEB-15
+What now works: canonical migrations rebuilt on local Supabase; SQL isolation/function checks, 62 API tests and 94 mobile tests pass. Python lint/types pass. Hosted deployment is not claimed.
 Read first:
 - `supabase/config.toml`
 - `database/Makefile`, `database/compose.yaml`, `database/tests/run.sql`
@@ -170,7 +169,7 @@ Done when:
 Verify: `pnpm db:reset && pnpm test`.
 
 ### DB-03: Retire the second migration track
-Status: todo · Phase 0 · Size S · Depends: DB-02, OPS-06 · Blocks: none
+Status: blocked (OPS-06 needs a green GitHub Actions run) · Phase 0 · Size S · Depends: DB-02, OPS-06 · Blocks: none
 Do:
 1. Delete these, plus their Makefile, `package.json` and `compose` targets:
    - `database/migrations/`
@@ -187,7 +186,8 @@ Done when:
 - no document mentions `database/migrations` except as history.
 
 ### DB-04: Default-privilege hardening and a coverage test
-Status: todo · Phase 0 · Size S · Depends: DB-02 · Blocks: DB-05, OPS-14, QA-01
+Status: done (2026-09-26) · Phase 0 · Size S · Depends: DB-02 · Blocks: DB-05, OPS-14, QA-01
+What now works: canonical migrations rebuilt on local Supabase; SQL isolation/function checks, 62 API tests and 94 mobile tests pass. Python lint/types pass. Hosted deployment is not claimed.
 Read first: <https://www.postgresql.org/docs/17/sql-alterdefaultprivileges.html>. A per-schema `REVOKE` only undoes a per-schema `GRANT`, so `ALTER DEFAULT PRIVILEGES IN SCHEMA … REVOKE` changes nothing here. This was verified: a function created afterwards was still executable by `anon`.
 Do:
 1. Add a migration: `ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;`.
@@ -203,7 +203,8 @@ Do:
 Done when: the test runs in `pnpm test` and passes.
 
 ### DB-05: Identity and tenancy schema, private helpers and caller-scoped policies
-Status: todo · Phase 1 · Size L · Depends: BE-16, DB-04 · Blocks: BE-06, BE-07, DB-06, DB-07, DB-09, DB-10, DB-12, DB-13, OPS-14, QA-01
+Status: done (2026-09-26) · Phase 1 · Size L · Depends: BE-16, DB-04 · Blocks: BE-06, BE-07, DB-06, DB-07, DB-09, DB-10, DB-12, DB-13, OPS-14, QA-01
+What now works: canonical migrations rebuilt on local Supabase; SQL isolation/function checks, 62 API tests and 94 mobile tests pass. Python lint/types pass. Hosted deployment is not claimed.
 Read first:
 - [product.md](../docs/plan/product.md#roles)
 - the tenancy rows of the endpoint catalog in [contracts.md](../docs/plan/contracts.md)
@@ -309,7 +310,8 @@ Done when:
 - `supabase db advisors` shows no warnings beyond those documented in `docs/Supabase-Setup.md`.
 
 ### DB-06: Tenancy functions
-Status: todo · Phase 1 · Size L · Depends: DB-05 · Blocks: BE-06, BE-07, BE-08, DB-07, DB-08, OPS-14
+Status: done (2026-09-26) · Phase 1 · Size L · Depends: DB-05 · Blocks: BE-06, BE-07, BE-08, DB-07, DB-08, OPS-14
+What now works: canonical migrations rebuilt on local Supabase; SQL isolation/function checks, 62 API tests and 94 mobile tests pass. Python lint/types pass. Hosted deployment is not claimed.
 Read first: DB-05; the SQLSTATE table in the conventions above; [architecture.md rule 5](../docs/plan/architecture.md#security-rules).
 Do: add migration `tenancy_functions`.
 - **Every function** below lives in `fieldmaps_private` and is SECURITY DEFINER, with `SET search_path = ''`, owned by the migration owner, `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated, service_role`, and `GRANT EXECUTE … TO fieldmaps_api`.

@@ -1,38 +1,20 @@
-COMPOSE = docker compose --env-file /dev/null -f compose.yaml
-PSQL = $(COMPOSE) exec -T db psql -X -U fieldmaps_owner -v ON_ERROR_STOP=1
+.DEFAULT_GOAL := help
+.PHONY: help start stop reset test api-test
 
-.PHONY: up migrate seed test status stop api-build api-up api-test
+help:
+	@printf '%s\n' 'Use pnpm db:start, db:stop, db:reset, db:test or backend:test from the product root.'
 
-up:
-	$(COMPOSE) up -d --wait --wait-timeout 90
-	$(PSQL) -d postgres -f /workspace/create-local-databases.sql
-
-migrate:
-	$(PSQL) -d fieldmaps -f /workspace/migrate.sql
-
-seed:
-	$(PSQL) -d fieldmaps -f /workspace/seed-local.sql
-
-test:
-	$(PSQL) -d fieldmaps_test -f /workspace/migrate.sql
-	$(PSQL) -d fieldmaps_test -f /workspace/migrate.sql
-	$(PSQL) -d fieldmaps_test -f /workspace/tests/run.sql
-
-status:
-	$(PSQL) -d fieldmaps -c 'SELECT postgis_full_version();'
-	$(PSQL) -d fieldmaps -c 'TABLE fieldmaps_meta.schema_migrations;'
+start:
+	sh local-supabase.sh start
 
 stop:
-	$(COMPOSE) --profile api stop
+	sh local-supabase.sh stop
 
-api-build:
-	$(COMPOSE) build api
+reset:
+	sh local-supabase.sh reset
 
-api-up:
-	$(COMPOSE) --profile api up -d api
+test:
+	sh local-supabase.sh test
 
 api-test:
-	$(PSQL) -d postgres -f /workspace/create-local-databases.sql
-	$(PSQL) -d fieldmaps_api_test -f /workspace/migrate.sql
-	$(PSQL) -d fieldmaps_api_test -f /workspace/seed-local.sql
-	$(COMPOSE) run --rm --no-deps api /app/.venv/bin/pytest
+	sh local-supabase.sh api-test

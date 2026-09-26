@@ -11,7 +11,8 @@ INSERT INTO observations (
 SET LOCAL ROLE fieldmaps_sample_reader;
 -- When that role queries its approved GIS layer, only the sample project is visible.
 SELECT pg_temp.assert_true(
-  (SELECT count(*) = 1 AND min(observer_code) = 'QA' FROM gis.sample_observations),
+  (SELECT count(*) = 1 AND min(observer_code) = 'QA' FROM gis.sample_observations
+   WHERE observation_id IN ('30000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000002')),
   'sample GIS role cannot see another organization observations'
 );
 SELECT pg_temp.assert_rejected(

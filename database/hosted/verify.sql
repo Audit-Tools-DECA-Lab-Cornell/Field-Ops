@@ -22,13 +22,23 @@ BEGIN
   END IF;
 END;
 $$;
+GRANT EXECUTE ON FUNCTION pg_temp.assert_true(boolean, text),
+  pg_temp.assert_rejected(text, text, text) TO fieldmaps_api, fieldmaps_sample_reader;
+
 -- Privilege checks use has_any_column_privilege: grants here are column-limited, and
 -- has_table_privilege would stay false after a column-level grant slipped in.
+
+INSERT INTO auth.users (id, instance_id, aud, role, email)
+SELECT id, '00000000-0000-0000-0000-000000000000'::uuid, 'authenticated', 'authenticated', id::text || '@test.invalid'
+FROM (VALUES ('50000000-0000-4000-8000-000000000001'::uuid),
+  ('50000000-0000-4000-8000-000000000004'::uuid)) u(id) ON CONFLICT (id) DO NOTHING;
+INSERT INTO fieldmaps.profiles(user_id) VALUES ('50000000-0000-4000-8000-000000000001'),
+  ('50000000-0000-4000-8000-000000000004') ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO fieldmaps.project_memberships (user_id, organization_id, project_id, role)
 VALUES ('50000000-0000-4000-8000-000000000001',
   '10000000-0000-4000-8000-000000000001',
-  '10000000-0000-4000-8000-000000000002', 'observer');
+  '10000000-0000-4000-8000-000000000002', 'observer') ON CONFLICT (user_id, project_id) DO NOTHING;
 
 SET LOCAL ROLE fieldmaps_api;
 SELECT pg_temp.assert_true((SELECT count(*) = 0 FROM fieldmaps.projects), 'no identity sees no projects');
@@ -46,7 +56,7 @@ VALUES ('50000000-0000-4000-8000-000000000002',
 SELECT pg_temp.assert_true(
   (SELECT fieldmaps.longitude(geom) = -76.485 FROM fieldmaps.observations
    WHERE id = '50000000-0000-4000-8000-000000000002'), 'API geometry readback');
-SELECT set_config('fieldmaps.user_id', '50000000-0000-4000-8000-000000000003', true);
+SELECT set_config('fieldmaps.user_id', '50000000-0000-4000-8000-000000000009', true);
 SELECT pg_temp.assert_true((SELECT count(*) = 0 FROM fieldmaps.observations), 'unassigned user sees no observations');
 SELECT pg_temp.assert_true(NOT has_any_column_privilege(current_user, 'fieldmaps.observations', 'UPDATE'), 'API cannot edit observations');
 SELECT pg_temp.assert_true(NOT has_any_column_privilege(current_user, 'fieldmaps.project_memberships', 'INSERT'), 'API cannot assign memberships');
@@ -68,7 +78,7 @@ VALUES ('50000000-0000-4000-8000-000000000006',
 INSERT INTO fieldmaps.project_memberships (user_id, organization_id, project_id, role)
 VALUES ('50000000-0000-4000-8000-000000000004',
   '10000000-0000-4000-8000-000000000001',
-  '10000000-0000-4000-8000-000000000002', 'manager');
+  '10000000-0000-4000-8000-000000000002', 'manager') ON CONFLICT (user_id, project_id) DO NOTHING;
 SET LOCAL ROLE fieldmaps_api;
 SELECT set_config('fieldmaps.user_id', '50000000-0000-4000-8000-000000000004', true);
 INSERT INTO fieldmaps.site_packages
@@ -91,7 +101,7 @@ SELECT pg_temp.assert_rejected($$
     2, 'ready', '{"format":"verification"}', '\x01', repeat('b', 64),
     fieldmaps.request_user_id())$$,
   '42501', 'observer cannot prepare a package on a project that has a manager');
-SELECT set_config('fieldmaps.user_id', '50000000-0000-4000-8000-000000000003', true);
+SELECT set_config('fieldmaps.user_id', '50000000-0000-4000-8000-000000000009', true);
 SELECT pg_temp.assert_true((SELECT count(*) = 0 FROM fieldmaps.site_packages), 'unassigned user sees no packages');
 SELECT pg_temp.assert_true(NOT has_any_column_privilege(current_user, 'fieldmaps.site_packages', 'UPDATE'), 'API cannot edit packages');
 RESET ROLE;
@@ -99,5 +109,18 @@ SELECT pg_temp.assert_true(
   NOT has_any_column_privilege('anon', 'fieldmaps.site_packages', 'SELECT')
   AND NOT has_any_column_privilege('authenticated', 'fieldmaps.site_packages', 'SELECT'),
   'browser roles cannot read packages');
+SELECT set_config('fieldmaps.user_id', '', true);
+SET LOCAL ROLE fieldmaps_api;
+SELECT pg_temp.assert_true(NOT fieldmaps_private.has_project_role(
+  '10000000-0000-4000-8000-000000000002', ARRAY['manager']), 'no identity has no project role');
+SELECT pg_temp.assert_true(NOT has_column_privilege(current_user, 'fieldmaps.projects', 'is_training', 'UPDATE')
+  AND NOT has_column_privilege(current_user, 'fieldmaps.organizations', 'is_platform', 'UPDATE'),
+  'API cannot change protected tenancy flags');
+SELECT pg_temp.assert_rejected($$SELECT fieldmaps_private.ensure_profile(NULL)$$, 'FM006', 'tenancy functions require identity');
+SELECT pg_temp.assert_rejected($$SELECT fieldmaps_private.ensure_profile_row()$$, '42501', 'internal membership helper is not callable');
+RESET ROLE;
+CREATE FUNCTION pg_temp.hosted_default_probe() RETURNS integer LANGUAGE sql AS 'SELECT 1';
+SELECT pg_temp.assert_true(NOT has_function_privilege('anon', 'pg_temp.hosted_default_probe()', 'EXECUTE'),
+  'new functions are private by default');
 ROLLBACK;
-SELECT 'Thirteen hosted assertions passed; synthetic memberships, observation, site and package rolled back' AS result;
+SELECT 'Eighteen hosted assertions passed; synthetic memberships, observation, site and package rolled back' AS result;

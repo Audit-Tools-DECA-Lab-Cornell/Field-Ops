@@ -12,7 +12,7 @@ That is stated on the screens themselves — in the top bar, along the status fo
 
 The fixture observations are a **preview**, and the distinction is load-bearing. The database today holds two `shell-v1` records: the three-field practice form, enough to prove the upload path and nothing else. A management console over two rows demonstrates nothing about managing a study, so the fixtures preview how this workspace will read once `janet-test-v1` is published and a few days of collection have landed. `janet-test-v1` is still a draft, its record count in the database is still zero, and the instrument screen shows both numbers side by side rather than letting one of them pass for the other.
 
-The fixtures mirror the real schema rather than a convenient one: `database/migrations/0001_initial.sql` is the authority for what an organization, project, site, form version and observation are, and [`src/types/domain.ts`](src/types/domain.ts) does not invent a concept the schema does not have. The site geometry is the training site the collector already carries, copied coordinate for coordinate from `mobile/src/maps/sample-site.ts`, so a zone on this map is the polygon the observer tapped inside.
+The fixtures mirror the real schema rather than a convenient one: `supabase/migrations/` is the authority for what an organization, project, site, form version and observation are, and [`src/types/domain.ts`](src/types/domain.ts) does not invent a concept the schema does not have. The site geometry is the training site the collector already carries, copied coordinate for coordinate from `mobile/src/maps/sample-site.ts`, so a zone on this map is the polygon the observer tapped inside.
 
 ## Sections
 

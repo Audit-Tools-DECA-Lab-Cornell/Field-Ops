@@ -33,7 +33,9 @@ export default function RootLayout() {
     return <ScreenMessage title="Opening FieldMaps" detail="Preparing your local workspace…" />;
   return (
     <Suspense
-      fallback={<ScreenMessage title="Opening FieldMaps" detail="Preparing your local workspace…" />}
+      fallback={
+        <ScreenMessage title="Opening FieldMaps" detail="Preparing your local workspace…" />
+      }
     >
       <SQLiteProvider databaseName="fieldmaps-shell.db" onInit={initializeDatabase} useSuspense>
         <AuthProvider>

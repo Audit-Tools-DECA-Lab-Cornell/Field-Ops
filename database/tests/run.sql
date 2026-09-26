@@ -1,6 +1,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
-SET LOCAL search_path = fieldmaps, public;
+GRANT fieldmaps_api, fieldmaps_sample_reader TO postgres WITH SET TRUE;
+SET LOCAL search_path = fieldmaps, extensions, public;
 
 CREATE FUNCTION pg_temp.assert_true(actual boolean, label text) RETURNS void
 LANGUAGE plpgsql AS $$
@@ -27,19 +28,21 @@ BEGIN
   RAISE NOTICE 'PASS: %', label;
 END;
 $$;
+GRANT EXECUTE ON FUNCTION pg_temp.assert_true(boolean, text),
+  pg_temp.assert_rejected(text, text, text) TO fieldmaps_api, fieldmaps_sample_reader;
+
 
 -- Given the sample project and another organization with its own site and form.
-\ir ../sample-project.sql
-\ir ../sample-gis.sql
-INSERT INTO organizations VALUES ('20000000-0000-4000-8000-000000000001', 'Other team');
-INSERT INTO projects VALUES (
-  '20000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', 'Other project'
+\ir ../../supabase/seed.sql
+INSERT INTO organizations (id, name, slug) VALUES ('20000000-0000-4000-8000-000000000001', 'Other team', 'other-team');
+INSERT INTO projects (id, organization_id, name, code) VALUES (
+  '20000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', 'Other project', 'other-project'
 );
-INSERT INTO sites VALUES (
+INSERT INTO sites (id, organization_id, project_id, code, name) VALUES (
   '20000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000002', 'other-site', 'Other site'
 );
-INSERT INTO form_versions VALUES (
+INSERT INTO form_versions (id, organization_id, project_id, code, definition) VALUES (
   '20000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000001',
   '20000000-0000-4000-8000-000000000002', 'other-v1', '{"fields":[]}'
 );
@@ -59,16 +62,19 @@ INSERT INTO observations (
 SELECT pg_temp.assert_true(
   (SELECT longitude = -76.485 AND latitude = 42.448 AND people = 3
     AND notes = 'Database test' AND ST_SRID(geom) = 4326 AND fid > 0
-   FROM gis.sample_observations), 'QGIS projection preserves coordinates and typed answers'
+   FROM gis.sample_observations WHERE observation_id = '30000000-0000-4000-8000-000000000001'), 'QGIS projection preserves coordinates and typed answers'
 );
 -- The exact ledger, in order: a replay adds nothing, and a new migration must be listed here.
 SELECT pg_temp.assert_true(
   (SELECT array_agg(version ORDER BY version) FROM fieldmaps_meta.schema_migrations)
     = ARRAY['0001_initial', '0002_observation_uploads', '0003_spatial_interface',
-            '0004_site_packages', '0005_package_policy_identity'],
+            '0004_site_packages', '0005_package_policy_identity', '0006_default_privileges', '0007_identity_tenancy', '0008_tenancy_functions', '0009_invitation_membership_guard', '0010_tenancy_role_guards'],
   'migration replay records each version once'
 );
 \ir constraints.sql
 \ir access.sql
+\ir rls_coverage.sql
+\ir tenancy.sql
+\ir tenancy_functions.sql
 ROLLBACK;
 \echo All database scenarios passed; test records rolled back.

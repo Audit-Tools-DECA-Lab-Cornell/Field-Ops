@@ -6,6 +6,7 @@
       "!!ios",
       "!!android",
       "!!.expo",
+      "!!credentials",
       "!!pnpm-lock.yaml",
       "!!dist",
       "!!expo-env.d.ts"

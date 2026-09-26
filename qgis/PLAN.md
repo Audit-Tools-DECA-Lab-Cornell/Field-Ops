@@ -20,7 +20,7 @@ Decision D10 in [decisions.md](../docs/plan/decisions.md) sets the pilot's acces
 - The hosted database lacked the package tables until DB-01.
 
 **Outbound: reading observations today**
-- `gis.sample_observations` is owner-executed with `security_barrier`. Its WHERE clause hard-codes the org, project and `shell-v1` (`database/sample-gis.sql:32-34`), so RLS does not apply to it.
+- `gis.sample_observations` is owner-executed with `security_barrier`. Its WHERE clause hard-codes the org, project and `shell-v1` (`supabase/migrations/20260918185806_fieldops_initial.sql`), so RLS does not apply to it.
 - The only reader is the login `fieldmaps_qgis_training`: INHERIT from `fieldmaps_sample_reader`, read-only, with 30 s timeouts.
 - `qgis/pg_service.conf` has one service, `fieldmaps_training`. `fieldmaps-training.qgs` is kept outside git, next to its attachments archive.
 

@@ -38,7 +38,7 @@ ignore = ["COM812", "ISC001", "D203", "D213", "D100", "D101", "D102", "D103", "D
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = ["-ra", "--strict-config", "--strict-markers"]
-markers = ["integration: requires the isolated FieldMaps PostGIS socket"]
+markers = ["integration: requires the local FieldMaps Supabase stack"]
 
 [tool.uv]
 package = false

@@ -141,7 +141,7 @@ This is every piece of dummy data that must be gone before the pilot, and the ta
 | `web/src/data/basemaps.ts`, `web/src/components/basemaps/PackageUpload.tsx:92,166-181` | Fixture packages, a fixture project ID, a pasted token | The packages API, project from the route, token from the server session | WEB-01, WEB-08 |
 | `web/src/data/instrument.ts` | Fixture variables, rules and versions | The forms and versions API | WEB-09 |
 | `web/src/lib/analysis.ts` over the fixtures | Client-side aggregation | `GET …/summary` | WEB-11 |
-| `database/sample-gis.sql`, hosted `gis.sample_observations` | A view with fixed IDs | Generated per-form views | GIS-01, GIS-03 |
+| Canonical baseline `gis.sample_observations` | A view with fixed IDs | Generated per-form views | GIS-01, GIS-03 |
 
 ## What is deliberately not in the architecture yet
 

@@ -372,10 +372,12 @@ The functions:
    - Admins may change only `member` rows, and never to a role above `member`.
    - Only owners may touch `owner` and `admin` rows, or promote anyone to `admin`.
    - Only `transfer_ownership`, called by an owner, creates an owner.
+   - Ownership transfer enforces the recipient's three-organization cap under ordered account locks.
    - Managers (and org owners/admins) manage project roles.
    - Refuse `FM002 sole_owner` when a change would leave an org with no owner, or a non-training project with no manager.
 10. **`forget_user()`.**
    - Refuses `FM002` when the caller is the only owner of an org that has other members.
+   - Refuses `FM002` when deletion would leave a non-training project in an active organization without a manager.
    - It is idempotent. When an `auth.users` row exists for the caller, it:
      - deletes the caller's memberships;
      - **upserts** the profile: `INSERT INTO fieldmaps.profiles (user_id, deleted_at) VALUES (caller, now()) ON CONFLICT (user_id) DO UPDATE SET display_name = NULL, observer_initials = NULL, locale = NULL, deleted_at = coalesce(profiles.deleted_at, now())`.

@@ -68,6 +68,7 @@ SET LOCAL ROLE fieldmaps_api;
 SELECT set_config('fieldmaps.user_id', '52000000-0000-4000-8000-000000000002', true);
 SELECT (fieldmaps_private.create_project(:'org_id', 'Second project', 'second-project', 'UTC')).id AS second_project \gset
 SELECT pg_temp.assert_true(fieldmaps_private.has_project_role(:'second_project', ARRAY['manager']), 'admin creates project as manager');
+SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.forget_user()$q$, 'FM002', 'account deletion cannot remove last project manager');
 SELECT fieldmaps_private.create_invitation(:'org_id', :'project_id', 'viewer', NULL, 1, interval '1 day', NULL, repeat('e',64)) AS code_invitation \gset
 SELECT set_config('fieldmaps.user_id', '52000000-0000-4000-8000-000000000004', true);
 SELECT fieldmaps_private.redeem_invitation(NULL,repeat('e',64));
@@ -96,6 +97,8 @@ SELECT fieldmaps_private.create_organization('Limit one', 'limit-one', 'One', 'o
 SELECT fieldmaps_private.create_organization('Limit two', 'limit-two', 'Two', 'two-project', 'UTC');
 SELECT fieldmaps_private.create_organization('Limit three', 'limit-three', 'Three', 'three-project', 'UTC');
 SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.create_organization('Limit four','limit-four','Four','four-project','UTC')$q$, 'FM001', 'organization ownership limit enforced');
+SELECT set_config('fieldmaps.user_id', '52000000-0000-4000-8000-000000000002', true);
+SELECT pg_temp.assert_rejected(format('SELECT fieldmaps_private.transfer_ownership(%L,%L)', :'org_id', '52000000-0000-4000-8000-000000000001'), 'FM001', 'ownership transfer enforces recipient limit');
 SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.ensure_profile_row()$q$, '42501', 'internal profile helper is not an API entry point');
 SELECT set_config('fieldmaps.user_id', '59999999-0000-4000-8000-000000000099', true);
 SELECT fieldmaps_private.forget_user();

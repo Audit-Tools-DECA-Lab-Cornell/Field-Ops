@@ -131,8 +131,16 @@ def test_single_use_invitation_accepts_only_one_concurrent_redemption(
     )
 
 
-def test_concurrent_demotions_cannot_remove_both_project_managers(
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "SELECT fieldmaps_private.set_project_role(CAST(:target AS uuid), :user, 'viewer')",
+        "SELECT fieldmaps_private.forget_user()",
+    ],
+)
+def test_concurrent_changes_cannot_remove_both_project_managers(
     tenancy: tuple[UUID, UUID, UUID, UUID, str],
+    statement: str,
 ) -> None:
     first, second, org, project, _ = tenancy
     admin_sql(
@@ -148,7 +156,7 @@ def test_concurrent_demotions_cannot_remove_both_project_managers(
         act_together,
         first,
         second,
-        "SELECT fieldmaps_private.set_project_role(CAST(:target AS uuid), :user, 'viewer')",
+        statement,
         str(project),
     )
     assert results.count("accepted") == 1

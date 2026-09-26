@@ -30,7 +30,7 @@ Tenancy writes go through `fieldmaps_private` functions with a fixed empty searc
 
 ## Verification
 
-Verified locally on 2026-09-26: a fresh migration reset, 94 mobile tests, 62 API tests, 86 SQL assertions and 18 hosted-script assertions on the local database. Python lint and type checks pass.
+Verified locally on 2026-09-26: a fresh migration reset, 94 mobile tests, 63 API tests, 88 SQL assertions and 18 hosted-script assertions on the local database. Python lint and type checks pass.
 
 The SQL tests cover geometry, immutable forms, replay ledger, restricted GIS reads, private default privileges, tenancy RLS, ownership limits, invitations and account forgetting. API tests cover upload/package regressions, organization-admin access without project membership, simultaneous invitation redemption and simultaneous last-manager demotion.
 

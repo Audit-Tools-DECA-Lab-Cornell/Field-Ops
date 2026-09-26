@@ -31,6 +31,19 @@ SELECT pg_temp.assert_rejected(format('SELECT fieldmaps_private.create_invitatio
 SELECT set_config('fieldmaps.user_id', '52000000-0000-4000-8000-000000000001', true);
 SELECT pg_temp.assert_rejected(format('SELECT fieldmaps_private.remove_org_member(%L,%L)', :'org_id', '52000000-0000-4000-8000-000000000001'), 'FM002', 'last owner cannot be removed');
 SELECT pg_temp.assert_rejected(format('SELECT fieldmaps_private.remove_project_member(%L,%L)', :'project_id', '52000000-0000-4000-8000-000000000001'), 'FM002', 'last manager cannot be removed');
+SELECT fieldmaps_private.create_invitation(:'org_id', :'project_id', 'viewer', NULL, 3, interval '1 day', repeat('6',64), NULL) AS existing_project_invite \gset
+SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.redeem_invitation(repeat('6',64),NULL)$q$, 'FM003', 'existing project member cannot consume invitation');
+SELECT pg_temp.assert_true((SELECT use_count = 0 FROM fieldmaps.invitations WHERE id = :'existing_project_invite'), 'existing project member preserves invitation uses');
+SELECT pg_temp.assert_true((SELECT role = 'manager' FROM fieldmaps.project_memberships WHERE project_id = :'project_id' AND user_id = fieldmaps.request_user_id()), 'existing project role is preserved');
+SELECT fieldmaps_private.create_invitation(:'org_id', NULL, 'member', NULL, 3, interval '1 day', repeat('7',64), NULL) AS existing_org_invite \gset
+SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.redeem_invitation(repeat('7',64),NULL)$q$, 'FM003', 'existing organization member cannot consume invitation');
+SELECT pg_temp.assert_true((SELECT use_count = 0 FROM fieldmaps.invitations WHERE id = :'existing_org_invite'), 'existing organization member preserves invitation uses');
+SELECT set_config('fieldmaps.user_id', '52000000-0000-4000-8000-000000000002', true);
+SELECT fieldmaps_private.redeem_invitation(repeat('6',64),NULL);
+SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.redeem_invitation(repeat('6',64),NULL)$q$, 'FM003', 'successful multi-use redemption cannot be repeated');
+SELECT pg_temp.assert_true((SELECT use_count = 1 FROM fieldmaps.invitations WHERE id = :'existing_project_invite'), 'new project member consumes exactly one use');
+SELECT pg_temp.assert_true((SELECT role = 'admin' FROM fieldmaps.organization_members WHERE organization_id = :'org_id' AND user_id = fieldmaps.request_user_id()), 'joining a project preserves existing organization role');
+SELECT set_config('fieldmaps.user_id', '52000000-0000-4000-8000-000000000001', true);
 SELECT pg_temp.assert_rejected($q$SELECT fieldmaps_private.forget_user()$q$, 'FM002', 'sole owner with teammates cannot delete account');
 SELECT fieldmaps_private.create_invitation(:'org_id', :'project_id', 'observer', 'MixedCase+3@Test.Invalid', 1, interval '1 day', repeat('c',64), NULL);
 SELECT fieldmaps_private.create_invitation(:'org_id', :'project_id', 'observer', 'mixedcase+4@test.invalid', 1, interval '1 day', repeat('d',64), NULL);

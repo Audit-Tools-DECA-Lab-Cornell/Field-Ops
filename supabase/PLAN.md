@@ -367,6 +367,7 @@ The functions:
    - Choose the target table from `project_id IS NULL`, never from the role text:
      - an org invite inserts `organization_members`;
      - a project invite inserts `project_memberships`, and also an `organization_members` row with role `member` if the caller has none, so `/o/[org]` routes work for them.
+   - Reject an existing member of the target with `FM003`; the exception rolls back the guarded increment. An existing organization member may still join a new project. Invitation redemption never changes an existing role.
 9. **Role management.** `set_org_role(p_org_id, p_user_id, p_role)`, `remove_org_member(p_org_id, p_user_id)`, `set_project_role(p_project_id, p_user_id, p_role)`, `remove_project_member(p_project_id, p_user_id)`, `transfer_ownership(p_org_id, p_user_id)`.
    - Admins may change only `member` rows, and never to a role above `member`.
    - Only owners may touch `owner` and `admin` rows, or promote anyone to `admin`.

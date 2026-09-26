@@ -34,6 +34,6 @@ Verified locally on 2026-09-26: a fresh migration reset, 94 mobile tests, 62 API
 
 The SQL tests cover geometry, immutable forms, replay ledger, restricted GIS reads, private default privileges, tenancy RLS, ownership limits, invitations and account forgetting. API tests cover upload/package regressions, organization-admin access without project membership, simultaneous invitation redemption and simultaneous last-manager demotion.
 
-The historical Docker migration files are retained only until OPS-06 has a green GitHub Actions run; DB-03 removes them then. No current test or command uses that track. See [the canonical-migrations decision](../docs/decisions/0001-canonical-migrations.md).
+DB-03 retired the historical Docker migration track after [all five CI jobs passed](https://github.com/Audit-Tools-DECA-Lab-Cornell/Field-Maps/actions/runs/36273492260). See [the canonical-migrations decision](../docs/decisions/0001-canonical-migrations.md).
 
 Hosted migration application remains a separate operation. `hosted/verify.sql` now requires the DB-04/05/06 migrations and checks their security boundary; applying files locally does not deploy them.

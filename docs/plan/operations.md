@@ -101,7 +101,8 @@ Done when: a preview deployment can sign in against staging.
 Verify: sign in on a preview URL.
 
 ### OPS-06: GitHub Actions CI
-Status: doing (workflow prepared; local checks pass; awaiting GitHub Actions) · Phase 0 · Size M · Depends: DB-02 · Blocks: DB-03, OPS-09
+Status: done (2026-09-26) · Phase 0 · Size M · Depends: DB-02 · Blocks: DB-03, OPS-09
+Evidence: [all five jobs passed on PR 10](https://github.com/Audit-Tools-DECA-Lab-Cornell/Field-Maps/actions/runs/36273492260). Contract generation joins CI when CON-03 is implemented.
 Read first: the root `package.json` scripts; `Makefile`; `docs/Workspace.md` ("Development and checks").
 Do:
 1. Create `.github/workflows/ci.yml` with these jobs:

@@ -1,7 +1,7 @@
 /**
  * The FieldMaps domain, named the way the database names it.
  *
- * `database/migrations/0001_initial.sql` is the authority: an organization owns projects, a
+ * `supabase/migrations/` is the authority: an organization owns projects, a
  * project owns sites and immutable form versions, and every observation belongs to one site and
  * one form version, carries a point in EPSG:4326 and a JSON answer object, and is revised rather
  * than edited in place. Nothing in this file invents a concept the schema does not have.

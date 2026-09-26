@@ -31,7 +31,7 @@ Related plan files:
 **Local foundation now implemented:** profiles linked to Auth, organization memberships, invitations, private tenancy functions, caller-scoped RLS and concurrency tests. Public HTTP identity/tenancy endpoints remain BE-06/07; Training data remains DB-07.
 
 **Canonical migration track (2026-09-26).**
-- Historical `database/migrations/0001-0005` and its ledger remain on disk pending DB-03; no current command or test uses them.
+- DB-03 removed the historical `database/migrations/0001-0005` track, its ledger, seeds and Docker bootstrap after CI passed.
 - `supabase/migrations/` (hosted: a squashed initial file with seeds, plus small files).
 - Decision D7 makes `supabase/migrations/` canonical.
 
@@ -92,7 +92,7 @@ Related plan files:
 
 ### DB-01: Port site packages to the hosted migrations
 Status: doing (user reports migration applied; staging package acceptance remains unverified) · Phase 0 · Size S · Depends: none · Blocks: DB-12, SYNC-01, WEB-01
-Read first: `supabase/migrations/20260923120000_site_packages.sql`; `database/migrations/0004_site_packages.sql` and `0005_package_policy_identity.sql`; `database/hosted/verify.sql`.
+Read first: `supabase/migrations/20260923120000_site_packages.sql`; `database/hosted/verify.sql`. The historical local package migrations were retired by DB-03.
 Done so far (2026-09-26):
 - **The hosted migration** holds local `0004`'s tables and triggers, and `0005`'s tightened policies:
   - every membership test names the caller;
@@ -133,7 +133,7 @@ Status: done (2026-09-26) · Phase 0 · Size L · Depends: none · Blocks: DB-03
 What now works: canonical migrations rebuilt on local Supabase; SQL isolation/function checks, 62 API tests and 94 mobile tests pass. Python lint/types pass. Hosted deployment is not claimed.
 Read first:
 - `supabase/config.toml`
-- `database/Makefile`, `database/compose.yaml`, `database/tests/run.sql`
+- `database/Makefile`, `database/local-supabase.sh`, `database/tests/run.sql` (the historical Compose stack was retired by DB-03)
 - `backend/tests/conftest.py`, `backend/config.local.json`
 - `docs/Workspace.md`
 
@@ -169,7 +169,8 @@ Done when:
 Verify: `pnpm db:reset && pnpm test`.
 
 ### DB-03: Retire the second migration track
-Status: blocked (OPS-06 needs a green GitHub Actions run) · Phase 0 · Size S · Depends: DB-02, OPS-06 · Blocks: none
+Status: done (2026-09-26) · Phase 0 · Size S · Depends: DB-02, OPS-06 · Blocks: none
+Evidence: [CI passed before retirement](https://github.com/Audit-Tools-DECA-Lab-Cornell/Field-Maps/actions/runs/36273492260). The historical migration track, ledger, duplicate seeds and local Docker bootstrap are removed; canonical migrations, local Supabase tests and hosted operations remain.
 Do:
 1. Delete these, plus their Makefile, `package.json` and `compose` targets:
    - `database/migrations/`

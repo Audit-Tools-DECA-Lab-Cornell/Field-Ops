@@ -12,7 +12,7 @@ The starter creates a random API-role password in ignored `database/.local/field
 
 The initial, already-applied migration contains the practice site, form and GIS view. `supabase/seed.sql` adds local-only fictional Auth accounts and memberships. Applied migrations remain unchanged; corrections use new files.
 
-DB-03 retires the historical migration track after the local suite and OPS-06 CI pass. Hosted migration application is a separate operation.
+DB-03 retired the historical migration track after the local suite and OPS-06 CI passed. Hosted migration application is a separate operation.
 
 ## Tenancy function contracts
 
@@ -20,6 +20,6 @@ DB-03 retires the historical migration track after the local suite and OPS-06 CI
 
 Ownership transfer promotes an existing member and changes the transferring owner to admin in the same transaction. Forgetting a sole owner with teammates is refused. A sole-owned organization without other members is marked deleted when its owner is forgotten, preserving research records while hiding the abandoned organization. User locks serialize account deletion and organization creation; organization locks serialize role changes and invitation redemption.
 
-## CI gate still pending
+## CI verification
 
-The workflow covers web checks/build, mobile checks/tests, backend checks/tests, SQL assertions and plan validation. Local Node 24 verification passes the full workspace checks, web build and all tests. The pre-existing mobile formatting failures are fixed, and Biome excludes the git-ignored credentials directory. DB-03 remains blocked until OPS-06 has a green GitHub Actions run.
+The workflow covers web checks/build, mobile checks/tests, backend checks/tests, SQL assertions and plan validation. Local Node 24 verification passes the full workspace checks, web build and all tests. The pre-existing mobile formatting failures are fixed, and Biome excludes the git-ignored credentials directory. [All five GitHub Actions jobs passed](https://github.com/Audit-Tools-DECA-Lab-Cornell/Field-Maps/actions/runs/36273492260) on commit `f9f162a` before DB-03 removed the historical files.

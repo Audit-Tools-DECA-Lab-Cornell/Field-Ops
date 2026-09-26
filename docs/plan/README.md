@@ -199,5 +199,5 @@ Cut in this order:
   - The user reports applying it to staging; package acceptance was not repeated here.
 - **Review of PR 9.** Greptile's six findings and about 45 further defects from a verified review pass are folded into the task texts above (see decisions D13–D17).
 - **DB-02, DB-04, DB-05 and DB-06 are complete locally (2026-09-26).** A fresh Supabase reset, 94 mobile tests, 62 API tests and SQL isolation/function suites pass.
-- **OPS-06 is prepared; DB-03 waits for its green GitHub Actions run.** Local checks pass, including mobile formatting.
+- **OPS-06 and DB-03 are complete (2026-09-26).** [All five CI jobs passed](https://github.com/Audit-Tools-DECA-Lab-Cornell/Field-Maps/actions/runs/36273492260), then the unused migration track was retired. Local checks pass, including mobile formatting.
 - Remaining task status lives in each owning file.
